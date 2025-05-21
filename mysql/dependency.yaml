@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+  namespace: bagisto
+type: Opaque
+data:
+  ROOT_PASSWORD: cGFzc3dvcmQ=
+  USER: YmFnaXN0b191c2Vy
+  PASSWORD: cGFzc3dvcmQ=
+  DATABASE: YmFnaXN0b19kYg==
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-cluster-backup-secret
+  namespace: bagisto
+type: Opaque
+stringData:
+  AWS_ACCESS_KEY_ID: HzKAWLryNAqVlb9c5m9e
+  AWS_SECRET_ACCESS_KEY: IMcjZkH45UjJXb5v1SDLOBY2Pdu4mR57wpxnXRIA
+  AWS_REGION: us-east-1
+  S3_PROVIDER: Other
+  S3_ENDPOINT: http://minio-central-db-backups-hl.minio-central-db-backups.svc.cluster.local:9000
+  AWS_STORAGE_CLASS: STANDARD
+---
+apiVersion: mysql.presslabs.org/v1alpha1
+kind: MysqlCluster
+metadata:
+  name: mysql-cluster
+  namespace: bagisto
+spec:
+  replicas: 2
+  secretName: mysql-secret
+  backupSchedule: "0 0 0 * * 0" #weekly
+  backupSecretName: mysql-cluster-backup-secret
+  backupURL:  s3://wal-backups/spilo/mysql
+  backupRemoteDeletePolicy: delete
+  volumeSpec:
+      persistentVolumeClaim:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 1Gi
